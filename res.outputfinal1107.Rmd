@@ -1,0 +1,211 @@
+---
+title: "plot for output 15S30S30L"
+author: "Xinyi"
+date: "15/04/2022"
+output: html_document
+---
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(ggplot2)
+library(zoo)
+library(gridExtra)
+library(ggpubr)
+
+AUC_cal<-function(TPR,TNR){
+id <- 1:(length(TNR))
+AUC <- sum(diff((1-TPR)[id])*rollmean(TNR[id],2))}
+
+#"mse","AUC","bic.tr","bic.TPR","bic.TNR","t","it"
+line<-function(out,j,sim){
+  mse=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$mse},out=out))
+  TPR=rowMeans(sapply(1:sim,function(i,out){out[[i]][[j]]$TPR},out=out))
+  TNR=rowMeans(sapply(1:sim,function(i,out){out[[i]][[j]]$TNR},out=out))
+  tpr=c(1,TPR)
+  tnr=c(0,TNR)
+  AUC=AUC_cal(tpr,tnr)
+  bic.tr=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$L_bic.res$TR},out=out))
+  bic.TPR=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$L_bic.res$TPR},out=out))
+  bic.TNR=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$L_bic.res$TNR},out=out))
+  it=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$it},out=out))
+  t=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$t},out=out))
+  return(c( mse,AUC,bic.tr,bic.TPR,bic.TNR,t,it))
+}
+
+res.output<-function(filename,ifl=T,ifprint=F){
+load(filename)
+print(which(sapply(1:length(out),function(i,out){1-is.null(out[[i]]$vari)},out=out)==0))
+nalist0.5=sapply(1:sim,function(i,out){!all(!is.infinite(out[[i]]$irls0.5$L_lower))},out=out)
+nalist1=sapply(1:sim,function(i,out){!all(!is.infinite(out[[i]]$irls1$L_lower))},out=out)
+L_old=L!=0
+out=out[which(sapply(1:length(out),function(i,out){1-is.null(out[[i]]$vari)},out=out)==1)]
+if (ifprint){
+print(L)
+print(B)
+print(P)
+paras = matrix(0,1,4)
+colnames(paras) = c('sim','N','t','seed') 
+paras[1,]=c(sim,N,t,seed)
+print(paras)}
+sim=length(out)
+
+t=it=bic=AUC=TPR=TNR=L_class=na.flag=list()
+res.all = matrix(0,13,7)
+names=rownames(res.all) = c("vari","oblimin","quartmin","simplimax","geominQ","promax","irls1","irls0.5", "lasso0.01", "lasso0.05","lasso0.1","lasso0.2","lasso0.5")
+colnames(res.all) = c("mse","AUC","bic.tr","bic.TPR","bic.TNR","t","it") 
+for (j in 1:6){
+res.all[j,1]=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$mse},out=out))}
+for (j in 7:13){
+  res.all[j,]=line(out,j,sim)
+}
+#print(res.all)
+
+res.ci=matrix(0,2,4)
+rownames(res.ci) = c("irls0.5","irls1")
+colnames(res.ci) = c("ci.tr","ci.type-1","ci.type-2",'nas')
+
+L_class$irls1= rowMeans(sapply(1:sim,function(i,out){out[[i]]$irls1$L_class},out=out))
+L_class$irls0.5= rowMeans(sapply(1:sim,function(i,out){out[[i]]$irls0.5$L_class},out=out))
+
+L_old=L!=0
+#p<-par(mfrow=c(1,2),oma=c(0,0,3,0))
+fl=list()
+for(i in 1:2){
+dat=data.frame(class=as.factor(as.numeric(L_old)),
+               CI_coverage= L_class[[i]])
+a=aggregate(dat$CI_coverage, list(dat$class), FUN=mean) [2]
+res.ci[i,1]=mean(dat$CI_coverage)
+res.ci[i,2]=1-a[1,1]
+res.ci[i,3]=1-a[2,1]
+fl[[i]]<-ggplot(dat, aes(x=class,y=CI_coverage)) + geom_boxplot()+labs(title=names[i+1],
+           x=expression(paste(lambda[ij],"!=0?")),y='Entrywise CI coverage')+ylim(0.92,0.98)
+}
+print('na$irls0.5')
+
+res.ci[1,4]=sum(nalist0.5)
+print(which(nalist0.5!=0))
+print('na$irls1')
+
+res.ci[2,4]=sum(nalist1)
+print(which(nalist1!=0))
+return(list(res.all=res.all,res.ci=res.ci))
+}
+```
+
+```{r, tab_h.3}
+# path = 
+setwd(paste0(path,'/Rdata'))
+filename="Lp.1123A.21N400.RData"
+res21.400<-res.output(filename,T,ifprint=T)
+filename="Lp.1123A.21N800.RData"
+res21.800<-res.output(filename,T)
+filename="Lp.1123A.21N1600.RData"
+res21.1600<-res.output(filename,T)
+resall=cbind(res21.400$res.all)
+resall=rbind(resall,res21.800$res.all)
+resall=rbind(resall,res21.1600$res.all)
+resci=cbind(res21.400$res.ci)
+resci=rbind(resci,res21.800$res.ci)
+resci=rbind(resci,res21.1600$res.ci)
+print(resall)
+print(resci)
+write.csv(resall,file = paste0("res.all21.csv"))
+write.csv(resci,file = paste0("res.ci21.csv"))
+```
+
+
+
+```{r, tab_1,tab_2}
+# path =
+setwd(paste0(path,'/Rdata'))
+filename="Lp.1121.15N400.RData"
+res15.400<-res.output(filename,T,ifprint=T)
+filename="Lp.1121.15N800.RData"
+res15.800<-res.output(filename,T)
+filename="Lp.1121.15N1600.RData"
+res15.1600<-res.output(filename,T)
+filename="Lp.1121.30N400.RData"
+res30.400<-res.output(filename,T,ifprint=T)
+filename="Lp.1121.30N800.RData"
+res30.800<-res.output(filename,T)
+filename="Lp.1121.30N1600.RData"
+res30.1600<-res.output(filename,T)
+resall=cbind(res15.400$res.all,res30.400$res.all)
+resall=rbind(resall,cbind(res15.800$res.all,res30.800$res.all))
+resall=rbind(resall,cbind(res15.1600$res.all,res30.1600$res.all))
+resci=cbind(res15.400$res.ci,res30.400$res.ci)
+resci=rbind(resci,cbind(res15.800$res.ci,res30.800$res.ci))
+resci=rbind(resci,cbind(res15.1600$res.ci,res30.1600$res.ci))
+print(resall)
+print(resci)
+write.csv(resall,file = paste0("res.all1530.csv"))
+write.csv(resci,file = paste0("res.ci1530.csv"))
+```
+
+
+
+
+```{r,fig_4(a)}
+
+library(ggplot2)
+library(ggpubr)
+
+gen.dat<-function(filename,n,path){
+setwd(paste0(path,'/Rdata'))
+load(filename)
+out=out[which(sapply(1:length(out),function(i,out){1-is.null(out[[i]]$vari)},out=out)==1)]
+sim=length(out)
+
+L_class=list()
+L_class$irls1= rowMeans(sapply(1:sim,function(i,out){out[[i]]$irls1$L_class},out=out))
+L_class$irls0.5= rowMeans(sapply(1:sim,function(i,out){out[[i]]$irls0.5$L_class},out=out))
+L_old=L!=0
+#p<-par(mfrow=c(1,2),oma=c(0,0,3,0))
+names= c("oblimin","irls1","irls0.5", "lasso0.01", "lasso0.05","lasso0.1","lasso0.2","lasso0.5")
+dat1=data.frame(class1=as.numeric(L_old),
+              ECIC= L_class[[1]],p=1,n=n)
+dat1$m=with(dat1,n+10*p+class1)
+dat2=data.frame(class1=as.numeric(L_old),p=0.5,
+              ECIC= L_class[[2]],n=n)
+dat2$m=with(dat2,n+10*p+class1)
+
+dat=rbind(dat1,dat2)
+return(dat)}
+
+
+pdf(file='15_3.pdf',width=15, height = 6.5)
+dat400=gen.dat("Lp.1121.15N400.RData",400,path)
+dat800=gen.dat("Lp.1121.15N800.RData",800,path)
+dat1600=gen.dat("Lp.1121.15N1600.RData",1600,path)
+dat=rbind(dat400,dat800,dat1600)
+ggplot(dat, aes(x=as.factor(m),y=ECIC,color=as.factor(p))) + geom_boxplot()+labs(colour= 'p',
+           y='ECIC',x='')+ylim(0.925,0.975)+
+scale_x_discrete(labels=c('0 \n n=400','1 \n n=400','0 \n n=400','1 \n n=400','0 \n n=800','1 \n n=800','0 \n n=800','1 \n n=800','0 \n n=1600','1 \n n=1600','0 \n n=1600','1 \n n=1600')) +theme_set(theme_minimal())+theme(panel.grid.major=element_line(colour=NA))+theme(text = element_text(size = 23))
+
+dev.off()
+
+```
+
+```{r,fig_4(b)}
+setwd(paste0(path,'/Rdata'))
+pdf(file='30_5.pdf',width=15, height = 6.5)
+dat400=gen.dat("Lp.1121.30N400.RData",400,path)
+dat800=gen.dat("Lp.1121.30N800.RData",800,path)
+dat1600=gen.dat("Lp.1121.30N1600.RData",1600,path)
+dat=rbind(dat400,dat800,dat1600)
+ggplot(dat, aes(x=as.factor(m),y=ECIC,color=as.factor(p))) + geom_boxplot()+labs(colour= 'p',
+           y='ECIC',x='')+ylim(0.925,0.975)+
+scale_x_discrete(labels=c('0 \n n=400','1 \n n=400','0 \n n=400','1 \n n=400','0 \n n=800','1 \n n=800','0 \n n=800','1 \n n=800','0 \n n=1600','1 \n n=1600','0 \n n=1600','1 \n n=1600')) +theme_set(theme_bw())+theme(panel.grid.major=element_line(colour=NA))+theme(text = element_text(size = 23))
+
+dev.off()
+```
+```
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

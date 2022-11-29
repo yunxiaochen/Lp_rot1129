@@ -1,0 +1,120 @@
+---
+title: "plot for output 15S30S30L"
+author: "Xinyi"
+date: "15/04/2022"
+output: html_document
+---
+#1114 counter output
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width=10,fig.height=5)
+computer='dell'
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+library(ggplot2)
+library(zoo)
+library(gridExtra)
+library(ggpubr)
+
+AUC_cal<-function(TPR,TNR){
+id <- 1:(length(TNR))
+AUC <- sum(diff((1-TPR)[id])*rollmean(TNR[id],2))}
+
+#"mse","AUC","bic.tr","bic.TPR","bic.TNR","t","it"
+line<-function(out,j,sim){
+  mse=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$mse},out=out))
+  TPR=rowMeans(sapply(1:sim,function(i,out){out[[i]][[j]]$TPR},out=out))
+  TNR=rowMeans(sapply(1:sim,function(i,out){out[[i]][[j]]$TNR},out=out))
+  tpr=c(1,TPR)
+  tnr=c(0,TNR)
+  AUC=AUC_cal(tpr,tnr)
+  bic.tr=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$L_bic.res$TR},out=out))
+  bic.TPR=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$L_bic.res$TPR},out=out))
+  bic.TNR=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$L_bic.res$TNR},out=out))
+  it=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$it},out=out))
+  t=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$t},out=out))
+  return(c( mse,AUC,bic.tr,bic.TPR,bic.TNR,t,it))
+}
+
+res.output_counter<-function(filename,ifl=T,ifprint=F){
+load(filename)
+print(which(sapply(1:length(out),function(i,out){1-is.null(out[[i]]$irls1)},out=out)==0))
+nalist0.5=sapply(1:sim,function(i,out){!all(!is.infinite(out[[i]]$irls0.5$L_lower))},out=out)
+nalist1=sapply(1:sim,function(i,out){!all(!is.infinite(out[[i]]$irls1$L_lower))},out=out)
+L_old=L!=0
+print(L)
+print(B)
+print(t(B)%*%B)
+print(P)
+out=out[which(sapply(1:length(out),function(i,out){1-is.null(out[[i]]$irls1)},out=out)==1)]
+paras = matrix(0,1,4)
+colnames(paras) = c('sim','N','t','seed') 
+paras[1,]=c(sim,N,t,seed)
+print(paras)
+sim=length(out)
+
+t=it=bic=AUC=TPR=TNR=L_class=na.flag=list()
+res.all = matrix(0,2,7)
+names=rownames(res.all) = c("vari","oblimin","quartmin","simplimax","geominQ","promax","irls1","irls0.5", "lasso0.01", "lasso0.05","lasso0.1","lasso0.2","lasso0.5")[7:8]
+colnames(res.all) = c("mse","AUC","bic.tr","bic.TPR","bic.TNR","t","it") 
+# for (j in 1:6){
+# res.all[j,1]=mean(sapply(1:sim,function(i,out){out[[i]][[j]]$mse},out=out))}
+for (j in 1:2){
+  res.all[j,]=line(out,j,sim)
+}
+#print(res.all)
+
+res.ci=matrix(0,2,4)
+rownames(res.ci) = c("irls0.5","irls1")
+colnames(res.ci) = c("ci.tr","ci.type-1","ci.type-2",'nas')
+
+L_class$irls1= rowMeans(sapply(1:sim,function(i,out){out[[i]]$irls1$L_class},out=out))
+L_class$irls0.5= rowMeans(sapply(1:sim,function(i,out){out[[i]]$irls0.5$L_class},out=out))
+
+L_old=L!=0
+#p<-par(mfrow=c(1,2),oma=c(0,0,3,0))
+fl=list()
+for(i in 1:2){
+dat=data.frame(class=as.factor(as.numeric(L_old)),
+               CI_coverage= L_class[[i]])
+a=aggregate(dat$CI_coverage, list(dat$class), FUN=mean) [2]
+res.ci[i,1]=mean(dat$CI_coverage)
+res.ci[i,2]=1-a[1,1]
+res.ci[i,3]=1-a[2,1]
+fl[[i]]<-ggplot(dat, aes(x=class,y=CI_coverage)) + geom_boxplot()+labs(title=names[i+1],
+           x=expression(paste(lambda[ij],"!=0?")),y='Entrywise CI coverage')+ylim(0.92,0.98)
+}
+print('na$irls0.5')
+
+res.ci[1,4]=sum(nalist0.5)
+print(which(nalist0.5!=0))
+print('na$irls1')
+
+res.ci[2,4]=sum(nalist1)
+print(which(nalist1!=0))
+#print(res.ci)
+write.csv(res.all,file = paste0("res.all",filename,".csv"))
+write.csv(res.ci,file = paste0("res.ci",filename,".csv"))
+
+return(list(res.all,res.ci))
+}
+```
+
+```{r}
+# path =
+setwd(Paste0(path,'/Rdata'))
+filename="1121Counter.18S.RData"
+res.output_counter(filename,T)
+```
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
