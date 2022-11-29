@@ -23,4 +23,4 @@ Here are the files that compare the performance of Lp rotation to other rotation
 This folder contains all raw results in the Rdata form which will be further processed by *res.outputfinal1107.Rmd* and *res.outputfinal1114.Rmd*. It also includes the big 5 dataset.
 
 ## Tables and Figures
-This folder contains all Table and Figures in the main text.
+This folder contains all Tables and Figures in the main text.
