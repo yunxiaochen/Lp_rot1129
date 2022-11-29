@@ -4,7 +4,7 @@ This is a repository for conducting experiments in Rotation to Sparse Loadings u
 *cl1121_Lp_fun.R* contains all the auxiliary functions, such as IRGP algorithm, proximal gradient descent algorithm, etc. It is the source for all experiments in folders Study I, study II and Big 5 Personality Test. 
 
 ## Study 1
-Table 1, 2 and Figure 4 are produced mainly by *cl1121A_experiment.15S.R*, cl1121A_experiment.30S.R*, where the 15S, 30S indicating the setting and the two files only differ in parameters, not in experiments. 
+Table 1, 2 and Figure 4 are produced mainly by *cl1121A_experiment.15S.R*, cl1121A_experiment.30S.R*, where the 15S, 30S indicates the setting and the two files only differ in parameters, not in experiments. 
 
 The initial results are stored in Rdata files and processed by *res.outputfinal1107.Rmd*.
 
