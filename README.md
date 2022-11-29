@@ -14,7 +14,7 @@ To draw the U-shape curve in Figure 3, we first generate Lasso path solutions by
 Table 3 is produced by *counter1121.R*. The initial results are stored in Rdata files and processed by *res.outputfinal1114.Rmd*
 
 ## Big-Five Personality Test
-Table 4-7 in the main test and K1-K3 in the supplement are produced by *big5_r_code_1115sgn.Rmd*, which is a rmarkdown file.
+Table 4-7 in the main text and Table K1-K3 in the supplement are produced by *big5_r_code_1115sgn.Rmd*, which is a rmarkdown file.
 
 ## Supplement.H
 Here are the files that compare the performance of Lp rotation to other rotation criteria. Table H.1 and Table H.2 are produced by *geomin_1128_chart.R*. Table H.3 is produced by *res.outputfinal1107.Rmd* using the Rdata results from *cl1123A_experiment.21S.R*. The minimizers of the L1 and L0.5 rotation is checked by grid search by *geomin_1128_gridsearch.R*
